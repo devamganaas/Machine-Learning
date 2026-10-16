@@ -1,0 +1,282 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPib83VxQi2XlfafgB17h1+",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/devamganaas/Machine-Learning/blob/main/Bagging%20and%20boosting\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.preprocessing import OneHotEncoder\n",
+        "from sklearn.compose import ColumnTransformer\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "\n",
+        "from sklearn.tree import DecisionTreeClassifier\n",
+        "from sklearn.ensemble import BaggingClassifier, AdaBoostClassifier\n",
+        "\n",
+        "from sklearn.metrics import (\n",
+        "    accuracy_score,\n",
+        "    precision_score,\n",
+        "    recall_score,\n",
+        "    f1_score\n",
+        ")"
+      ],
+      "metadata": {
+        "id": "6CHCNSNtUakq"
+      },
+      "execution_count": 15,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Load Titanic dataset directly from a public URL to prevent FileNotFoundError\n",
+        "url = \"https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv\"\n",
+        "df = pd.read_csv(url)\n",
+        "\n",
+        "# Select features\n",
+        "features = [\n",
+        "    \"Pclass\", \"Sex\", \"Age\", \"SibSp\",\n",
+        "    \"Parch\", \"Fare\", \"Embarked\"\n",
+        "]\n",
+        "\n",
+        "X = df[features]\n",
+        "y = df[\"Survived\"]\n",
+        "\n",
+        "# Feature types\n",
+        "numeric_features = [\n",
+        "    \"Pclass\", \"Age\", \"SibSp\", \"Parch\", \"Fare\"\n",
+        "]\n",
+        "\n",
+        "categorical_features = [\"Sex\", \"Embarked\"]\n"
+      ],
+      "metadata": {
+        "id": "gJqQqpewWk3v"
+      },
+      "execution_count": 19,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Preprocessing\n",
+        "preprocessor = ColumnTransformer(\n",
+        "    transformers=[\n",
+        "        (\"num\", \"passthrough\", numeric_features),\n",
+        "        (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"),\n",
+        "         categorical_features)\n",
+        "    ]\n",
+        ")\n",
+        "\n",
+        "# Split dataset\n",
+        "X_train, X_test, y_train, y_test = train_test_split(\n",
+        "    X, y, test_size=0.2,\n",
+        "    random_state=42, stratify=y\n",
+        ")\n",
+        "\n",
+        "# Base Decision Tree\n",
+        "base_model = DecisionTreeClassifier(\n",
+        "    max_depth=4,\n",
+        "    random_state=42\n",
+        ")\n",
+        ""
+      ],
+      "metadata": {
+        "id": "RwqGMk8hWk6c"
+      },
+      "execution_count": 20,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Bagging\n",
+        "bagging = BaggingClassifier(\n",
+        "    estimator=base_model,\n",
+        "    n_estimators=50,\n",
+        "    random_state=42\n",
+        ")\n",
+        "\n",
+        "bagging_pipeline = Pipeline([\n",
+        "    (\"preprocessor\", preprocessor),\n",
+        "    (\"classifier\", bagging)\n",
+        "])\n",
+        "\n",
+        "bagging_pipeline.fit(X_train, y_train)\n",
+        "bag_pred = bagging_pipeline.predict(X_test)\n",
+        ""
+      ],
+      "metadata": {
+        "id": "0glz1XinXPIP"
+      },
+      "execution_count": 21,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.impute import SimpleImputer\n",
+        "\n",
+        "# Re-define preprocessor with Imputers to handle missing values (NaNs)\n",
+        "imputed_preprocessor = ColumnTransformer(\n",
+        "    transformers=[\n",
+        "        (\"num\", Pipeline([\n",
+        "            (\"imputer\", SimpleImputer(strategy=\"median\"))\n",
+        "        ]), numeric_features),\n",
+        "        (\"cat\", Pipeline([\n",
+        "            (\"imputer\", SimpleImputer(strategy=\"most_frequent\")),\n",
+        "            (\"onehot\", OneHotEncoder(handle_unknown=\"ignore\"))\n",
+        "        ]), categorical_features)\n",
+        "    ]\n",
+        ")\n",
+        "\n",
+        "# AdaBoost\n",
+        "boosting = AdaBoostClassifier(\n",
+        "    estimator=DecisionTreeClassifier(\n",
+        "        max_depth=2,\n",
+        "        random_state=42\n",
+        "    ),\n",
+        "    n_estimators=50,\n",
+        "    random_state=42\n",
+        ")\n",
+        "\n",
+        "boosting_pipeline = Pipeline([\n",
+        "    (\"preprocessor\", imputed_preprocessor),\n",
+        "    (\"classifier\", boosting)\n",
+        "])\n",
+        "\n",
+        "boosting_pipeline.fit(X_train, y_train)\n",
+        "boost_pred = boosting_pipeline.predict(X_test)\n"
+      ],
+      "metadata": {
+        "id": "7hcgbOyjXPLt"
+      },
+      "execution_count": 23,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Evaluate Bagging Classifier\n",
+        "bag_accuracy = accuracy_score(y_test, bag_pred)\n",
+        "bag_precision = precision_score(y_test, bag_pred)\n",
+        "bag_recall = recall_score(y_test, bag_pred)\n",
+        "bag_f1 = f1_score(y_test, bag_pred)\n",
+        "\n",
+        "# Evaluate AdaBoost Classifier\n",
+        "boost_accuracy = accuracy_score(y_test, boost_pred)\n",
+        "boost_precision = precision_score(y_test, boost_pred)\n",
+        "boost_recall = recall_score(y_test, boost_pred)\n",
+        "boost_f1 = f1_score(y_test, boost_pred)\n",
+        "\n",
+        "# Compare results\n",
+        "metrics_df = pd.DataFrame({\n",
+        "    \"Metric\": [\"Accuracy\", \"Precision\", \"Recall\", \"F1-Score\"],\n",
+        "    \"Bagging (Decision Tree)\": [bag_accuracy, bag_precision, bag_recall, bag_f1],\n",
+        "    \"AdaBoost (Decision Tree)\": [boost_accuracy, boost_precision, boost_recall, boost_f1]\n",
+        "})\n",
+        "\n",
+        "print(metrics_df.to_markdown(index=False))"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "NuPSir6sXPPg",
+        "outputId": "a7f6bbfe-6025-4e22-9e9b-8744be9443fe"
+      },
+      "execution_count": 26,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "| Metric    |   Bagging (Decision Tree) |   AdaBoost (Decision Tree) |\n",
+            "|:----------|--------------------------:|---------------------------:|\n",
+            "| Accuracy  |                  0.798883 |                   0.776536 |\n",
+            "| Precision |                  0.866667 |                   0.763636 |\n",
+            "| Recall    |                  0.565217 |                   0.608696 |\n",
+            "| F1-Score  |                  0.684211 |                   0.677419 |\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Evaluation function\n",
+        "def evaluate_model(name, y_true, y_pred):\n",
+        "    print(\"\\n\", name)\n",
+        "\n",
+        "    print(\"Accuracy:\",\n",
+        "          round(accuracy_score(y_true, y_pred), 4))\n",
+        "\n",
+        "    print(\"Precision:\",\n",
+        "          round(precision_score(y_true, y_pred), 4))\n",
+        "\n",
+        "    print(\"Recall:\",\n",
+        "          round(recall_score(y_true, y_pred), 4))\n",
+        "\n",
+        "    print(\"F1-score:\",\n",
+        "          round(f1_score(y_true, y_pred), 4))\n",
+        "\n",
+        "# Evaluate#\n",
+        "evaluate_model(\"Bagging\", y_test, bag_pred)\n",
+        "evaluate_model(\"Boosting (AdaBoost)\", y_test, boost_pred)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "93NX8phxXyDw",
+        "outputId": "fee258aa-7362-4b10-9040-21bbecb160fe"
+      },
+      "execution_count": 25,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            " Bagging\n",
+            "Accuracy: 0.7989\n",
+            "Precision: 0.8667\n",
+            "Recall: 0.5652\n",
+            "F1-score: 0.6842\n",
+            "\n",
+            " Boosting (AdaBoost)\n",
+            "Accuracy: 0.7765\n",
+            "Precision: 0.7636\n",
+            "Recall: 0.6087\n",
+            "F1-score: 0.6774\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
