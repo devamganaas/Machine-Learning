@@ -1,0 +1,141 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyO1nuPWU178EG6Zppb/Ym3m",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/devamganaas/Machine-Learning/blob/main/K%20means%20clustering%20on%20digits%20dataset\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.datasets import load_digits\n",
+        "from sklearn.preprocessing import StandardScaler\n",
+        "from sklearn.cluster import KMeans\n",
+        "from sklearn.metrics import silhouette_score\n",
+        ""
+      ],
+      "metadata": {
+        "id": "1ZB6JIKsPh1d"
+      },
+      "execution_count": 10,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Load dataset\n",
+        "digits = load_digits()\n",
+        "X = digits.data\n",
+        ""
+      ],
+      "metadata": {
+        "id": "TDKMbrh8Ph4s"
+      },
+      "execution_count": 11,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Standardize data\n",
+        "scaler = StandardScaler()\n",
+        "X_scaled = scaler.fit_transform(X)\n",
+        ""
+      ],
+      "metadata": {
+        "id": "KC80SnmYUafb"
+      },
+      "execution_count": 12,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Different K values\n",
+        "k_values = [8, 10, 12]\n",
+        "\n",
+        "for k in k_values:\n",
+        "\n",
+        "    kmeans = KMeans(\n",
+        "        n_clusters=k,\n",
+        "        random_state=42,\n",
+        "        n_init=10\n",
+        "    )\n",
+        "\n",
+        "    labels = kmeans.fit_predict(X_scaled)\n",
+        "\n",
+        "    inertia = kmeans.inertia_\n",
+        "\n",
+        "    silhouette = silhouette_score(\n",
+        "        X_scaled, labels\n",
+        "    )\n",
+        "\n",
+        "    print(\"K =\", k)\n",
+        "    print(\"Inertia =\", round(inertia, 2))\n",
+        "    print(\n",
+        "        \"Silhouette Score =\",\n",
+        "        round(silhouette, 4)\n",
+        "    )\n",
+        "    print()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "QAR2uEqJUaiT",
+        "outputId": "4df20cc3-7c7f-4546-84ca-168e53b2e15e"
+      },
+      "execution_count": 14,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "K = 8\n",
+            "Inertia = 74854.16\n",
+            "Silhouette Score = 0.1266\n",
+            "\n",
+            "K = 10\n",
+            "Inertia = 69813.56\n",
+            "Silhouette Score = 0.1394\n",
+            "\n",
+            "K = 12\n",
+            "Inertia = 65031.72\n",
+            "Silhouette Score = 0.1543\n",
+            "\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "6CHCNSNtUakq"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
